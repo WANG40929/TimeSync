@@ -1,11 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
-
+# 可移植的打包配置：在仓库根目录执行 pyinstaller time_sync.spec 即可
 
 a = Analysis(
-    ['C:\\Users\\admin\\AppData\\Roaming\\Tencent\\Marvis\\User\\oAN1i2U8vyc7KDeKv9sscbNgU0HM\\workspace\\conv_19e8d23d2cf_edbf9e485ec4\\temp\\time_sync.py'],
+    ['time_sync.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:\\Users\\admin\\AppData\\Roaming\\Tencent\\Marvis\\User\\oAN1i2U8vyc7KDeKv9sscbNgU0HM\\workspace\\conv_19e8d23d2cf_edbf9e485ec4\\temp\\extracted_ico.ico', '.')],
+    datas=[('icon.ico', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -14,6 +14,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -22,7 +23,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='time_sync',
+    name='TimeSync v1.1',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -35,5 +36,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['C:\\Users\\admin\\AppData\\Roaming\\Tencent\\Marvis\\User\\oAN1i2U8vyc7KDeKv9sscbNgU0HM\\workspace\\conv_19e8d23d2cf_edbf9e485ec4\\temp\\extracted_ico.ico'],
+    icon=['icon.ico'],
 )
