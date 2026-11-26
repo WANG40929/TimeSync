@@ -372,6 +372,13 @@ def _default_config():
     }
 
 
+def _safe_int(value, fallback):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return fallback
+
+
 def load_config():
     """读取配置；v1.0 只存了 timezone_offset，这里按偏移映射回真实时区"""
     cfg = _default_config()
@@ -758,10 +765,10 @@ class TimeSyncApp:
         if idx < 0:
             idx = len(TZ_PRESETS) - 1
             self.config["timezone_mode"] = "custom"
-            self.config["timezone_offset"] = int(
-                self.config.get("timezone_offset", get_current_offset_minutes()))
+            self.config["timezone_offset"] = _safe_int(
+                self.config.get("timezone_offset"), get_current_offset_minutes())
         self.tz_combo.current(idx)
-        self.custom_offset.set(int(self.config.get("timezone_offset", 480)) // 60)
+        self.custom_offset.set(_safe_int(self.config.get("timezone_offset"), 480) // 60)
 
         ntp = self.config.get("ntp_server", "pool.ntp.org")
         for i, s in enumerate(NTP_SERVERS):
@@ -960,7 +967,7 @@ def silent_sync():
             tz_msg = apply_timezone(
                 cfg.get("timezone_mode", "preset"),
                 cfg.get("timezone_id"),
-                int(cfg.get("timezone_offset", get_current_offset_minutes())),
+                _safe_int(cfg.get("timezone_offset"), get_current_offset_minutes()),
             )
             log(tz_msg)
         except Exception as e:
