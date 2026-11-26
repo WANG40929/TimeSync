@@ -55,7 +55,10 @@
   命令行：
     TimeSync v1.1.exe -s              静默同步一次（计划任务用，无需登录）
     TimeSync v1.1.exe --selfcheck     输出诊断信息到 C:\ProgramData\TimeSync\selfcheck.json
+    TimeSync v1.1.exe --verify        立即触发一次开机任务并记录结果到 verify.json
     TimeSync v1.1.exe --dry-run -s    演练：只测网络和判断，不改时间和时区
+    TimeSync v1.1.exe --install-autostart     无界面注册开机任务（需管理员）
+    TimeSync v1.1.exe --uninstall-autostart   移除开机任务（需管理员）
 
 
 ================================================================================

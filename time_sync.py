@@ -456,7 +456,11 @@ def log(msg):
 
 def _is_system_account():
     try:
-        return os.environ.get("USERNAME", "").upper() in ("SYSTEM", "LOCAL SERVICE", "NETWORK SERVICE")
+        if os.environ.get("USERNAME", "").upper() in (
+                "SYSTEM", "LOCAL SERVICE", "NETWORK SERVICE"):
+            return True
+        # SYSTEM 账户的 USERPROFILE 是 systemprofile，USERNAME 未必被设置
+        return "systemprofile" in os.environ.get("USERPROFILE", "").lower()
     except Exception:
         return False
 
@@ -1040,6 +1044,50 @@ def selfcheck():
 
 
 # ============================================================
+# 任务自检：真的把开机任务跑一遍
+# ============================================================
+def verify_task(wait=30):
+    info = {"admin": is_admin(), "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    exists, exe = _query_task()
+    info["task_exists"] = exists
+    info["task_exe"] = exe
+
+    if exists:
+        r = _ps("Start-ScheduledTask -TaskName '%s'" % TASK_NAME, timeout=60)
+        info["start_rc"] = r.returncode
+        info["start_err"] = (r.stderr or "").strip()
+        _time_module.sleep(wait)
+        i = _ps(
+            "$i = Get-ScheduledTaskInfo -TaskName '%s'; "
+            "$s = (Get-ScheduledTask -TaskName '%s').State; "
+            "Write-Output ($i.LastRunTime.ToString('s') + '|' + $i.LastTaskResult + '|' + $s)"
+            % (TASK_NAME, TASK_NAME), timeout=40)
+        info["last_run"] = (i.stdout or "").strip()
+
+    info["tz_id"] = get_current_tz_id()
+    info["offset_minutes"] = get_current_offset_minutes()
+    info["local_now"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    info["utc_now"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        with open(LOG_FILE, "r", encoding="utf-8", errors="replace") as f:
+            info["log_tail"] = [ln.rstrip("\n") for ln in f.readlines()[-10:]]
+    except OSError:
+        info["log_tail"] = []
+
+    text = json.dumps(info, ensure_ascii=False, indent=2)
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(os.path.join(DATA_DIR, "verify.json"), "w", encoding="utf-8") as f:
+            f.write(text)
+    except OSError:
+        pass
+    try:
+        print(text)
+    except Exception:
+        pass
+
+
+# ============================================================
 # 入口
 # ============================================================
 def main():
@@ -1050,6 +1098,13 @@ def main():
         selfcheck()
         return
 
+    if "--verify" in sys.argv:
+        if not is_admin():
+            request_admin()
+            return
+        verify_task()
+        return
+
     if "--silent" in sys.argv or "-s" in sys.argv:
         # 计划任务已用最高权限 / SYSTEM 运行，无需再提权
         ok = silent_sync()
@@ -1058,6 +1113,22 @@ def main():
     if DRY_RUN:
         selfcheck()
         return
+
+    # 无界面安装/卸载开机任务（便于脚本化部署）
+    if "--install-autostart" in sys.argv or "--uninstall-autostart" in sys.argv:
+        if not is_admin():
+            request_admin()
+            return
+        enable = "--install-autostart" in sys.argv
+        try:
+            set_auto_start(enable)
+            cfg = load_config()
+            cfg["auto_start"] = enable
+            save_config(cfg)
+            sys.exit(0)
+        except Exception as e:
+            log(f"命令行设置开机自启失败：{e}")
+            sys.exit(1)
 
     if not is_admin():
         request_admin()
